@@ -1,35 +1,489 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mon Espace Chauffeur — DIGIY</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mon Espace — Chauffeur DIGIY DRIVER</title>
+  <meta name="theme-color" content="#0A0E1A" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#0A0E1A;
+      --card:rgba(255,255,255,.03);
+      --line:rgba(148,163,184,.22);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --gold:#facc15;
+      --orange:#f97316;
+      --good:#22c55e;
+      --bad:#fb7185;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:
+        radial-gradient(1100px 500px at 20% -10%, rgba(250,204,21,.12), transparent 60%),
+        radial-gradient(900px 450px at 90% 0%, rgba(249,115,22,.10), transparent 55%),
+        var(--bg);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px}
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;
+      border:1px solid var(--line);border-radius:18px;padding:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      box-shadow:var(--shadow);
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+      border:1px solid var(--line);
+      background:linear-gradient(135deg, rgba(250,204,21,.18), rgba(249,115,22,.12));
+      color:var(--gold);font-weight:900;
+    }
+    h1{margin:0;font-size:20px}
+    .sub{margin:4px 0 0;color:var(--muted);font-weight:750}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{
+      padding:10px 12px;border-radius:14px;cursor:pointer;font-weight:900;
+      border:1px solid rgba(250,204,21,.45);
+      background:linear-gradient(135deg, rgba(250,204,21,.18), rgba(249,115,22,.12));
+      color:var(--text);
+    }
+    .btn.ghost{
+      border-color:rgba(148,163,184,.30);
+      background:rgba(2,6,23,.35);
+    }
+    .btn.danger{
+      border-color:rgba(251,113,133,.55);
+      background:rgba(251,113,133,.12);
+    }
+
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      border:1px solid var(--line);border-radius:18px;padding:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      box-shadow:var(--shadow);
+    }
+    .card h2{margin:0 0 6px;font-size:16px}
+    .hint{margin:0 0 12px;color:var(--muted);font-weight:750}
+
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:700px){.row{grid-template-columns:1fr}}
+
+    label{display:grid;gap:6px;margin:10px 0}
+    label span{font-size:13px;color:#cbd5e1;font-weight:900}
+    input, textarea, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(148,163,184,.28);
+      background:rgba(2,6,23,.55);
+      color:var(--text);
+      outline:none;
+      font-weight:800;
+    }
+    textarea{min-height:90px;resize:vertical}
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:999px;
+      border:1px solid rgba(148,163,184,.30);
+      background:rgba(2,6,23,.35);
+      font-weight:900;
+    }
+    .chip input{width:auto;accent-color:var(--gold)}
+    .divider{height:1px;background:var(--line);margin:14px 0}
+
+    .status{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px;border-radius:16px;border:1px solid var(--line);
+      background:rgba(2,6,23,.35);
+      margin-top:10px;
+    }
+    .badge{
+      padding:6px 10px;border-radius:999px;font-weight:1000;font-size:12px;
+      border:1px solid rgba(148,163,184,.30);
+    }
+    .badge.good{border-color:rgba(34,197,94,.45); background:rgba(34,197,94,.12); color:#bbf7d0;}
+    .badge.bad{border-color:rgba(251,113,133,.55); background:rgba(251,113,133,.10); color:#fecdd3;}
+
+    .msg{margin-top:10px;color:#cbd5e1;font-weight:850}
+    .msg.ok{color:#bbf7d0}
+    .msg.err{color:#fecdd3}
+    .small{font-size:12px;color:var(--muted);font-weight:750}
+  </style>
 </head>
 
-<body style="background:#0A0E1A;color:#fff;font-family:sans-serif;padding:30px">
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">∞</div>
+        <div>
+          <h1>Mon Espace Chauffeur — DIGIY DRIVER</h1>
+          <div class="sub">Complète ta fiche une fois, et tu es prêt à travailler.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btnTop" type="button">Remonter</button>
+        <button class="btn danger" id="btnLogout" type="button">⏏ Déconnexion</button>
+      </div>
+    </div>
 
-<h2>Mon Espace Chauffeur — DIGIY DRIVER</h2>
-<p>Complète ta fiche une fois, et tu es prêt à travailler.</p>
+    <div class="grid">
+      <!-- FORM -->
+      <div class="card">
+        <h2>Ma fiche professionnelle</h2>
+        <p class="hint">Zéro stress : l’essentiel suffit. Le reste on rajoute plus tard en option.</p>
 
-<button id="logout">⏏ Déconnexion</button>
+        <div class="row">
+          <label>
+            <span>Nom complet</span>
+            <input id="full_name" placeholder="Ex: Lamine Diop" />
+          </label>
+
+          <label>
+            <span>Téléphone (WhatsApp)</span>
+            <input id="phone" placeholder="+221771234567" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span>Secteur / Ville</span>
+            <input id="sector_city" placeholder="Ex: Dakar / Saly / Mbour" />
+          </label>
+
+          <label>
+            <span>Zones desservies (libre)</span>
+            <input id="zones" placeholder="Ex: Plateau, Almadies, AIBD, Saly..." />
+          </label>
+        </div>
+
+        <label>
+          <span>Type de véhicule</span>
+          <input id="vehicle" placeholder="Ex: Toyota Corolla 2019" />
+        </label>
+
+        <label>
+          <span>Services</span>
+          <select id="services">
+            <option value="">— Choisir —</option>
+            <option value="Aéroport + Visites + Ville">Aéroport + Visites + Ville</option>
+            <option value="Aéroport uniquement">Aéroport uniquement</option>
+            <option value="Ville / trajets locaux">Ville / trajets locaux</option>
+            <option value="Visites / excursions">Visites / excursions</option>
+          </select>
+        </label>
+
+        <div class="divider"></div>
+
+        <h2>Horaires & repos</h2>
+        <p class="hint">Tu contrôles ton temps. Les clients voient quand tu es dispo.</p>
+
+        <div class="row">
+          <label>
+            <span>Heure début</span>
+            <input id="time_start" type="time" value="08:00" />
+          </label>
+          <label>
+            <span>Heure fin</span>
+            <input id="time_end" type="time" value="20:00" />
+          </label>
+        </div>
+
+        <div>
+          <div class="small" style="margin-top:6px;font-weight:900;color:#cbd5e1">Jours de repos</div>
+          <div class="chips" id="rest_days">
+            <label class="chip"><input type="checkbox" value="Lun"> Lun</label>
+            <label class="chip"><input type="checkbox" value="Mar"> Mar</label>
+            <label class="chip"><input type="checkbox" value="Mer"> Mer</label>
+            <label class="chip"><input type="checkbox" value="Jeu"> Jeu</label>
+            <label class="chip"><input type="checkbox" value="Ven"> Ven</label>
+            <label class="chip"><input type="checkbox" value="Sam"> Sam</label>
+            <label class="chip"><input type="checkbox" value="Dim"> Dim</label>
+          </div>
+        </div>
+
+        <label>
+          <span>Note (optionnel)</span>
+          <textarea id="note" placeholder="Ex: disponible surtout matin, transferts AIBD, calme et ponctuel."></textarea>
+        </label>
+
+        <div class="divider"></div>
+
+        <h2>Documents (V1)</h2>
+        <p class="hint">V1 = local (léger). V2 = storage Supabase + validation.</p>
+
+        <div class="row">
+          <label>
+            <span>Permis de conduire</span>
+            <input id="doc_permis" type="file" accept="image/*,application/pdf" />
+          </label>
+          <label>
+            <span>Assurance véhicule</span>
+            <input id="doc_assurance" type="file" accept="image/*,application/pdf" />
+          </label>
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" id="btnSave" type="button">Sauvegarder</button>
+        </div>
+
+        <div id="msg" class="msg"></div>
+      </div>
+
+      <!-- STATUS / QUICK ACTIONS -->
+      <div class="card">
+        <h2>Statut de la fiche</h2>
+        <p class="hint">Objectif : être complet et propre.</p>
+
+        <div class="status">
+          <div style="font-weight:1000">État :</div>
+          <div id="badge" class="badge bad">Incomplet</div>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          ✅ Recommandé minimum :<br>
+          — Nom + Téléphone<br>
+          — Secteur + véhicule<br>
+          — Horaires + jours repos<br>
+          — Permis + assurance (si possible)
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>Actions rapides</h2>
+        <p class="hint">Ici c’est ton cockpit.</p>
+
+        <button class="btn ghost" type="button" onclick="location.href='https://beauville.github.io/dashboard-chauffeur/'">
+          Dashboard public
+        </button>
+
+        <div class="small" style="margin-top:10px">
+          V1 : simple & solide. V2 : stockage docs + badge “Vérifié”.
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA";
+  // ====== CONFIG SUPABASE ======
+  const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = (id) => document.getElementById(id);
+  const msg = $("msg");
+  const badge = $("badge");
 
-// Guard
-(async () => {
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) location.href = "./index.html";
-})();
+  const cleanPhone = (s) => (s || "").replace(/\s+/g, "").trim();
 
-logout.onclick = async () => {
-  await sb.auth.signOut();
-  location.href = "./index.html";
-};
+  function getRestDays(){
+    return Array.from(document.querySelectorAll("#rest_days input[type=checkbox]:checked"))
+      .map(x => x.value);
+  }
+  function setRestDays(days){
+    const set = new Set(days || []);
+    document.querySelectorAll("#rest_days input[type=checkbox]").forEach(chk=>{
+      chk.checked = set.has(chk.value);
+    });
+  }
+
+  function computeStatus(data){
+    const ok =
+      data.full_name &&
+      data.phone &&
+      data.sector_city &&
+      data.vehicle &&
+      data.time_start &&
+      data.time_end &&
+      (data.rest_days && data.rest_days.length>0);
+
+    badge.className = "badge " + (ok ? "good" : "bad");
+    badge.textContent = ok ? "Complet" : "Incomplet";
+    return ok;
+  }
+
+  function localKey(uid){ return `digiy_driver_profile_v1_${uid || "guest"}`; }
+
+  function loadLocal(uid){
+    try{
+      const raw = localStorage.getItem(localKey(uid));
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){ return null; }
+  }
+
+  function saveLocal(uid, data){
+    localStorage.setItem(localKey(uid), JSON.stringify(data));
+  }
+
+  async function guard(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){
+      location.href="./index.html";
+      return null;
+    }
+    return session;
+  }
+
+  async function hydrate(){
+    const session = await guard();
+    if(!session) return;
+
+    // Pré-remplir phone depuis auth
+    const authPhone = session.user?.phone ? cleanPhone(session.user.phone) : "";
+
+    // 1) charger local d'abord
+    const local = loadLocal(session.user.id);
+    if(local){
+      $("full_name").value = local.full_name || "";
+      $("phone").value = local.phone || authPhone || "";
+      $("sector_city").value = local.sector_city || "";
+      $("zones").value = local.zones || "";
+      $("vehicle").value = local.vehicle || "";
+      $("services").value = local.services || "";
+      $("time_start").value = local.time_start || "08:00";
+      $("time_end").value = local.time_end || "20:00";
+      setRestDays(local.rest_days || []);
+      $("note").value = local.note || "";
+      computeStatus(local);
+      return;
+    }
+
+    // 2) tenter charger depuis Supabase (si table prête + RLS OK)
+    try{
+      const { data, error } = await sb
+        .from("driver_profiles")
+        .select("*")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle();
+
+      if(!error && data){
+        $("full_name").value = data.full_name || "";
+        $("phone").value = data.phone || authPhone || "";
+        $("sector_city").value = data.sector_city || "";
+        $("zones").value = data.zones || "";
+        $("vehicle").value = data.vehicle || "";
+        $("services").value = data.services || "";
+        $("time_start").value = data.time_start || "08:00";
+        $("time_end").value = data.time_end || "20:00";
+        setRestDays(data.rest_days || []);
+        $("note").value = data.note || "";
+        computeStatus({
+          full_name: $("full_name").value,
+          phone: $("phone").value,
+          sector_city: $("sector_city").value,
+          vehicle: $("vehicle").value,
+          time_start: $("time_start").value,
+          time_end: $("time_end").value,
+          rest_days: getRestDays()
+        });
+        return;
+      }
+    }catch(e){}
+
+    // 3) fallback : juste phone auth
+    $("phone").value = authPhone;
+  }
+
+  async function saveProfile(){
+    msg.className = "msg";
+    msg.textContent = "";
+
+    const session = await guard();
+    if(!session) return;
+
+    const data = {
+      auth_user_id: session.user.id,
+      full_name: $("full_name").value.trim(),
+      phone: cleanPhone($("phone").value),
+      sector_city: $("sector_city").value.trim(),
+      zones: $("zones").value.trim(),
+      vehicle: $("vehicle").value.trim(),
+      services: $("services").value,
+      time_start: $("time_start").value,
+      time_end: $("time_end").value,
+      rest_days: getRestDays(),
+      note: $("note").value.trim()
+    };
+
+    computeStatus(data);
+
+    // V1: Local storage toujours
+    saveLocal(session.user.id, data);
+
+    // V1 docs: on stocke juste les noms (pas upload)
+    const permis = $("doc_permis").files?.[0]?.name || "";
+    const assurance = $("doc_assurance").files?.[0]?.name || "";
+    saveLocal(session.user.id, { ...data, doc_permis_name: permis, doc_assurance_name: assurance });
+
+    // V1.5: si table existe, upsert
+    try{
+      const { error } = await sb
+        .from("driver_profiles")
+        .upsert(data, { onConflict: "auth_user_id" });
+
+      if(error){
+        msg.className = "msg err";
+        msg.textContent = "Sauvé en local ✅ (DB non prête / RLS / table) — " + error.message;
+        return;
+      }
+      msg.className = "msg ok";
+      msg.textContent = "Sauvegardé ✅ (local + Supabase)";
+    }catch(e){
+      msg.className = "msg ok";
+      msg.textContent = "Sauvegardé ✅ (local).";
+    }
+  }
+
+  // UI
+  $("btnTop").onclick = () => window.scrollTo({ top:0, behavior:"smooth" });
+
+  $("btnLogout").onclick = async () => {
+    try { await sb.auth.signOut(); } catch(e){}
+    location.href="./index.html";
+  };
+
+  $("btnSave").onclick = saveProfile;
+
+  // Live status update
+  ["full_name","phone","sector_city","zones","vehicle","services","time_start","time_end","note"].forEach(id=>{
+    $(id).addEventListener("input", ()=>{
+      computeStatus({
+        full_name: $("full_name").value.trim(),
+        phone: cleanPhone($("phone").value),
+        sector_city: $("sector_city").value.trim(),
+        vehicle: $("vehicle").value.trim(),
+        time_start: $("time_start").value,
+        time_end: $("time_end").value,
+        rest_days: getRestDays()
+      });
+    });
+  });
+  document.querySelectorAll("#rest_days input[type=checkbox]").forEach(chk=>{
+    chk.addEventListener("change", ()=>{
+      computeStatus({
+        full_name: $("full_name").value.trim(),
+        phone: cleanPhone($("phone").value),
+        sector_city: $("sector_city").value.trim(),
+        vehicle: $("vehicle").value.trim(),
+        time_start: $("time_start").value,
+        time_end: $("time_end").value,
+        rest_days: getRestDays()
+      });
+    });
+  });
+
+  // Init
+  hydrate();
 </script>
 </body>
 </html>
