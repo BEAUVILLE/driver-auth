@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Espace Chauffeur — DIGIY</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background:#0A0E1A;color:#fff;font-family:sans-serif;padding:30px">
+
+<h2>Mon Espace Chauffeur — DIGIY DRIVER</h2>
+<p>Complète ta fiche une fois, et tu es prêt à travailler.</p>
+
+<button id="logout">⏏ Déconnexion</button>
+
+<script>
+const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Guard
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) location.href = "./index.html";
+})();
+
+logout.onclick = async () => {
+  await sb.auth.signOut();
+  location.href = "./index.html";
+};
+</script>
+</body>
+</html>
