@@ -4,50 +4,102 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DIGIY DRIVER — Connexion</title>
+<meta name="theme-color" content="#0A0E1A">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body{margin:0;font-family:system-ui;background:#0A0E1A;color:#fff;padding:28px}
+  .card{max-width:520px;margin:0 auto;border:1px solid rgba(148,163,184,.22);border-radius:18px;padding:16px;background:rgba(255,255,255,.03)}
+  h2{margin:0 0 6px}
+  p{margin:6px 0;color:#9ca3af;font-weight:700}
+  input{width:100%;padding:12px;border-radius:14px;border:1px solid rgba(148,163,184,.28);background:rgba(2,6,23,.55);color:#fff;font-weight:900}
+  button{margin-top:10px;width:100%;padding:12px;border-radius:14px;border:1px solid rgba(250,204,21,.45);background:rgba(250,204,21,.12);color:#fff;font-weight:1000;cursor:pointer}
+  .ghost{border-color:rgba(148,163,184,.30);background:rgba(2,6,23,.35)}
+  .msg{margin-top:10px;font-weight:900}
+</style>
 </head>
+<body>
+  <div class="card">
+    <h2>DIGIY DRIVER — Connexion Chauffeur</h2>
+    <p>⚡ Recommandé : connexion par PIN (après paiement). SMS OTP revient bientôt.</p>
 
-<body style="background:#0A0E1A;color:#fff;font-family:sans-serif;padding:30px">
+    <label style="display:block;margin-top:10px">
+      <p>Téléphone (format +221...)</p>
+      <input id="phone" placeholder="+221771234567">
+    </label>
 
-<h2>DIGIY DRIVER — Connexion Chauffeur</h2>
-<p>Connexion sécurisée par code SMS (OTP)</p>
+    <label style="display:block;margin-top:10px">
+      <p>PIN (6 chiffres)</p>
+      <input id="pin" placeholder="123456">
+    </label>
 
-<input id="phone" placeholder="+221771234567" style="padding:12px;width:100%;max-width:320px"><br><br>
-<button id="send">📲 Envoyer le code</button><br><br>
+    <button id="pinLogin">🔑 Entrer avec PIN</button>
 
-<input id="otp" placeholder="Code OTP" style="padding:12px;width:100%;max-width:320px"><br><br>
-<button id="verify">✅ Valider</button>
+    <button id="otpToggle" class="ghost">📲 Essayer OTP SMS (si dispo)</button>
 
-<p id="msg"></p>
+    <div id="otpBox" style="display:none;margin-top:12px">
+      <input id="otp" placeholder="Code OTP (SMS)">
+      <button id="sendOtp" class="ghost">Envoyer OTP</button>
+      <button id="verifyOtp" class="ghost">Valider OTP</button>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </div>
 
 <script>
 const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA";
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const msg = document.getElementById("msg");
 
-send.onclick = async () => {
-  const phoneVal = phone.value.trim();
-  const { error } = await sb.auth.signInWithOtp({ phone: phoneVal });
-  msg.textContent = error ? error.message : "Code envoyé par SMS";
+const $ = (id)=>document.getElementById(id);
+const msg = $("msg");
+const cleanPhone = (s)=> (s||"").replace(/\s+/g,"").trim();
+
+$("otpToggle").onclick = () => {
+  $("otpBox").style.display = $("otpBox").style.display === "none" ? "block" : "none";
 };
 
-verify.onclick = async () => {
-  const phoneVal = phone.value.trim();
-  const token = otp.value.trim();
+$("pinLogin").onclick = async () => {
+  msg.textContent = "";
+  const phone = cleanPhone($("phone").value);
+  const pin = ($("pin").value||"").trim();
 
-  const { error } = await sb.auth.verifyOtp({
-    phone: phoneVal,
-    token,
-    type: "sms"
-  });
-
-  if (error) {
-    msg.textContent = error.message;
+  if(!phone.startsWith("+") || pin.length < 4){
+    msg.textContent = "⚠️ Mets un téléphone +221... et ton PIN.";
     return;
   }
 
+  // Appel RPC Supabase (anon OK)
+  const { data, error } = await sb.rpc("verify_access_pin", { p_phone: phone, p_pin: pin, p_module: "DRIVER" });
+
+  if(error){
+    msg.textContent = "Erreur serveur PIN: " + error.message;
+    return;
+  }
+  if(!data?.ok){
+    msg.textContent = "❌ PIN invalide / expiré.";
+    return;
+  }
+
+  // Session locale “PIN”
+  localStorage.setItem("digiy_pin_session", JSON.stringify({ phone, at: Date.now(), module:"DRIVER" }));
+  location.href = "./espace-chauffeur.html";
+};
+
+// OTP (option)
+$("sendOtp").onclick = async () => {
+  msg.textContent = "";
+  const phone = cleanPhone($("phone").value);
+  const { error } = await sb.auth.signInWithOtp({ phone });
+  msg.textContent = error ? ("OTP error: "+error.message) : "✅ OTP demandé (si route SMS OK).";
+};
+
+$("verifyOtp").onclick = async () => {
+  msg.textContent = "";
+  const phone = cleanPhone($("phone").value);
+  const token = ($("otp").value||"").trim();
+  const { error } = await sb.auth.verifyOtp({ phone, token, type:"sms" });
+  if(error){ msg.textContent = "OTP invalid: " + error.message; return; }
+  localStorage.removeItem("digiy_pin_session");
   location.href = "./douane.html";
 };
 </script>
