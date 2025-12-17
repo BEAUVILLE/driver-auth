@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIGIY DRIVER — Connexion</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background:#0A0E1A;color:#fff;font-family:sans-serif;padding:30px">
+
+<h2>DIGIY DRIVER — Connexion Chauffeur</h2>
+<p>Connexion sécurisée par code SMS (OTP)</p>
+
+<input id="phone" placeholder="+221771234567" style="padding:12px;width:100%;max-width:320px"><br><br>
+<button id="send">📲 Envoyer le code</button><br><br>
+
+<input id="otp" placeholder="Code OTP" style="padding:12px;width:100%;max-width:320px"><br><br>
+<button id="verify">✅ Valider</button>
+
+<p id="msg"></p>
+
+<script>
+const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const msg = document.getElementById("msg");
+
+send.onclick = async () => {
+  const phoneVal = phone.value.trim();
+  const { error } = await sb.auth.signInWithOtp({ phone: phoneVal });
+  msg.textContent = error ? error.message : "Code envoyé par SMS";
+};
+
+verify.onclick = async () => {
+  const phoneVal = phone.value.trim();
+  const token = otp.value.trim();
+
+  const { error } = await sb.auth.verifyOtp({
+    phone: phoneVal,
+    token,
+    type: "sms"
+  });
+
+  if (error) {
+    msg.textContent = error.message;
+    return;
+  }
+
+  location.href = "./douane.html";
+};
+</script>
+</body>
+</html>
