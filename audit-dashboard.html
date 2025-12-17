@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DIGIY — Journal des actions (Audit)</title>
+  <style>
+    :root{
+      --bg:#0b1020;--card:#0f172a;--ink:#e5e7eb;--muted:#94a3b8;--line:rgba(148,163,184,.25);
+      --accent:#facc15;--ok:#22c55e;--no:#ef4444;
+    }
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(1200px 600px at 20% 0%,rgba(250,204,21,.10),transparent 50%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .brand{display:flex;gap:10px;align-items:center}
+    .badge{width:36px;height:36px;border-radius:12px;background:rgba(250,204,21,.12);display:grid;place-items:center;color:var(--accent);font-weight:900}
+    h1{font-size:18px;margin:0}
+    .card{margin-top:14px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:16px;padding:14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select,button{border-radius:12px;border:1px solid var(--line);background:rgba(2,6,23,.55);color:var(--ink);padding:10px 12px;outline:none}
+    input{min-width:280px;flex:1}
+    button{cursor:pointer;font-weight:800}
+    button.primary{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.35)}
+    button:hover{transform:translateY(-1px)}
+    .meta{color:var(--muted);font-size:12px;margin-top:8px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+    th,td{padding:10px;border-top:1px solid var(--line);vertical-align:top}
+    th{color:var(--muted);text-align:left;font-size:12px}
+    .pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-weight:800}
+    .pill.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.10)}
+    .pill.no{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.10)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:#cbd5e1}
+    .small{color:var(--muted);font-size:12px}
+  </style>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ✅ Remplace par tes valeurs
+    const SUPABASE_URL = "https://wesqmwjjtsefyjnluosj.supabase.coimport { createClient } from '@supabase/supabase-js'
+";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indlc3Ftd2pqdHNlZnlqbmx1b3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNzg4ODIsImV4cCI6MjA4MDc1NDg4Mn0.dZfYOc2iL2_wRYL3zExZFsFSBK6AbMeOid2LrIjcTdA
+";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id)=>document.getElementById(id);
+
+    function fmtDate(ts){
+      try{ return new Date(ts).toLocaleString('fr-FR'); }catch{ return ts; }
+    }
+
+    function csvEscape(v){
+      const s = (v ?? "").toString().replaceAll('"','""');
+      return `"${s}"`;
+    }
+
+    function downloadCSV(rows){
+      const headers = ["created_at","payment_id","action","success","actor","old_status","new_status","reason","module","amount","currency","provider","reference","pro_id"];
+      const lines = [headers.join(",")];
+      for(const r of rows){
+        lines.push(headers.map(h=>csvEscape(r[h])).join(","));
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `digiy-audit-${Date.now()}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    let lastRows = [];
+
+    async function load(){
+      el("err").textContent = "";
+      el("meta").textContent = "Chargement…";
+
+      const q = el("q").value.trim();
+      const action = el("action").value;
+      const success = el("success").value;
+      const limit = parseInt(el("limit").value || "50", 10);
+
+      let query = supabase
+        .from("v_payment_audit_dashboard")
+        .select("*")
+        .order("created_at", { ascending:false })
+        .limit(limit);
+
+      if(action !== "ALL") query = query.eq("action", action);
+      if(success !== "ALL") query = query.eq("success", success === "true");
+
+      // Recherche simple : payment_id OU reference OU actor
+      if(q){
+        // ilike sur reference/actor + match exact possible sur payment_id
+        query = query.or(
+          `payment_id.eq.${q},reference.ilike.%${q}%,actor.ilike.%${q}%`
+        );
+      }
+
+      const { data, error } = await query;
+      if(error){
+        el("err").textContent = error.message || "Erreur Supabase";
+        el("meta").textContent = "Échec du chargement.";
+        return;
+      }
+
+      lastRows = data || [];
+      render(lastRows);
+      el("meta").textContent = `${lastRows.length} lignes • tri: récent → ancien`;
+    }
+
+    function render(rows){
+      const tbody = el("tbody");
+      tbody.innerHTML = "";
+      for(const r of rows){
+        const tr = document.createElement("tr");
+
+        const ok = r.success ? "ok" : "no";
+        const okLabel = r.success ? "OK" : "BLOQUÉ";
+
+        tr.innerHTML = `
+          <td class="small">${fmtDate(r.created_at)}</td>
+          <td class="mono">${(r.action||"").slice(0,40)}</td>
+          <td><span class="pill ${ok}">${okLabel}</span></td>
+          <td class="mono">${(r.actor||"").slice(0,40)}</td>
+          <td class="small">${r.old_status ?? ""} → <b>${r.new_status ?? ""}</b></td>
+          <td class="mono">${(r.reference||"").slice(0,36)}</td>
+          <td class="small">${r.module ?? ""} • <b>${r.amount ?? ""}</b> ${r.currency ?? ""} • ${r.provider ?? ""}</td>
+          <td class="small">${r.reason ?? ""}</td>
+          <td class="mono">${(r.payment_id||"").slice(0,36)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", ()=>{
+      el("btn").addEventListener("click", load);
+      el("export").addEventListener("click", ()=>downloadCSV(lastRows));
+      el("q").addEventListener("keydown", (e)=>{ if(e.key==="Enter") load(); });
+      load();
+    });
+  </script>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="badge">∞</div>
+        <div>
+          <h1>DIGIY — Journal des actions (Audit)</h1>
+          <div class="small">Traçabilité “banque centrale” : qui a tenté quoi, quand.</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="btn">↻ Rafraîchir</button>
+        <button id="export">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <input id="q" placeholder="Rechercher: payment_id, référence (DIGIY-…), actor (email admin) …" />
+        <select id="action">
+          <option value="ALL">Toutes actions</option>
+          <option value="STATUS_CHANGE">STATUS_CHANGE</option>
+          <option value="BLOCKED_UPDATE">BLOCKED_UPDATE</option>
+          <option value="ROLLBACK_ADMIN">ROLLBACK_ADMIN</option>
+        </select>
+        <select id="success">
+          <option value="ALL">Tous résultats</option>
+          <option value="true">Succès</option>
+          <option value="false">Bloqué</option>
+        </select>
+        <select id="limit">
+          <option>50</option><option>100</option><option>200</option><option>500</option>
+        </select>
+      </div>
+
+      <div class="meta" id="meta"></div>
+      <div class="meta" id="err" style="color:#fca5a5;font-weight:800;"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Action</th>
+            <th>Résultat</th>
+            <th>Acteur</th>
+            <th>Statut</th>
+            <th>Référence</th>
+            <th>Paiement</th>
+            <th>Raison</th>
+            <th>Payment ID</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
